@@ -31,6 +31,14 @@ canvas{width:min(100%,640px);height:auto;aspect-ratio:2/1;image-rendering:pixela
 .tools label{margin:0;font-weight:500}
 .tools select{padding:8px}
 .hint{color:var(--muted);font-size:.9rem;line-height:1.5}
+#bigBtn{background:#51334f}
+.draw-card.fullscreen{position:fixed;inset:0;z-index:1000;margin:0;border-radius:0;padding:12px;background:#120e20;display:flex;flex-direction:column;gap:10px;overflow:auto}
+.draw-card.fullscreen .canvas-wrap{flex:0 0 auto;width:100%;padding:8px;min-height:0}
+.draw-card.fullscreen canvas{width:min(96vw, calc((100dvh - 230px)*2));max-width:100%;height:auto}
+.draw-card.fullscreen .tools{gap:8px;margin-top:0}
+.draw-card.fullscreen .hint{margin:0}
+.draw-card.fullscreen .canvas-title{font-size:1.1rem}
+@media(max-width:600px){body{padding:12px 8px 24px}.card{padding:14px}button,input,select{font-size:1rem;min-height:44px}.row{gap:8px}.tools{gap:8px}.tools button{flex:1}.draw-card.fullscreen{padding:8px}.draw-card.fullscreen .canvas-wrap{padding:4px}.draw-card.fullscreen .tools label{font-size:.95rem}}
 footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}
 @media(max-width:480px){.card{padding:14px}.canvas-wrap{padding:7px}}
 </style>
@@ -45,15 +53,15 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}
 <section class="card">
   <label for="deviceCode">Private-ish device code</label>
   <div class="row">
-    <input id="deviceCode" maxlength="48" autocomplete="off" spellcheck="false" value="ef0c2875db07a07808a3e34d41780142">
+    <input id="deviceCode" maxlength="48" autocomplete="off" spellcheck="false" value="change-this-7f3a9d2c">
     <button id="connectBtn" class="primary">Connect</button>
   </div>
   <div class="status"><span id="dot" class="dot"></span><span id="status">Not connected yet</span></div>
   <p class="hint">Use the exact same code in the ESP32 sketch. The broker is a shared public test service, so use a hard-to-guess code and don't draw anything sensitive.</p>
 </section>
 
-<section class="card">
-  <label>Your 128 × 64 drawing</label>
+<section class="card draw-card" id="drawCard">
+  <label class="canvas-title">Your 128 × 64 drawing</label>
   <div class="canvas-wrap"><canvas id="canvas" width="128" height="64" aria-label="Drawing canvas"></canvas></div>
   <div class="tools">
     <label for="tool">Tool</label>
@@ -61,6 +69,7 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}
     <label for="size">Size</label>
     <select id="size"><option value="1">1 px</option><option value="2" selected>2 px</option><option value="3">3 px</option><option value="5">5 px</option></select>
     <button id="clearBtn">Clear</button>
+    <button id="bigBtn" type="button">Big drawing mode ⛶</button>
     <button id="sendBtn" class="primary" disabled>Send to OLED ♡</button>
   </div>
   <p class="hint">Draw with your mouse or finger. The OLED is monochrome, so the site converts your picture to black and white.</p>
@@ -78,6 +87,8 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}
   const connectBtn = document.getElementById('connectBtn');
   const sendBtn = document.getElementById('sendBtn');
   const clearBtn = document.getElementById('clearBtn');
+  const bigBtn = document.getElementById('bigBtn');
+  const drawCard = document.getElementById('drawCard');
   const statusEl = document.getElementById('status');
   const dot = document.getElementById('dot');
   const tool = document.getElementById('tool');
@@ -170,6 +181,18 @@ footer{text-align:center;color:var(--muted);font-size:.82rem;margin-top:20px}
   canvas.addEventListener('pointerup', stop);
   canvas.addEventListener('pointercancel', stop);
   clearBtn.addEventListener('click', () => { ctx.fillStyle='#000'; ctx.fillRect(0,0,128,64); });
+  bigBtn.addEventListener('click', () => {
+    const expanded = drawCard.classList.toggle('fullscreen');
+    bigBtn.textContent = expanded ? 'Close big mode ✕' : 'Big drawing mode ⛶';
+    document.body.style.overflow = expanded ? 'hidden' : '';
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && drawCard.classList.contains('fullscreen')) {
+      drawCard.classList.remove('fullscreen');
+      bigBtn.textContent = 'Big drawing mode ⛶';
+      document.body.style.overflow = '';
+    }
+  });
   sendBtn.addEventListener('click', sendDrawing);
   connectBtn.addEventListener('click', connect);
   codeInput.addEventListener('keydown', e => { if (e.key === 'Enter') connect(); });
